@@ -28,6 +28,26 @@ defmodule X.Accounts.Account do
     |> hash_password()
   end
 
+  @spec to_json(map()) :: map()
+  def to_json(struct), do: struct |> to_json(:public)
+
+  @spec to_json(map(), :public | :sensitive) :: map()
+  def to_json(struct, _permission = :public) do
+    struct
+    |> Map.take([:user, :email])
+  end
+
+  def to_json(struct, _permission = :sensitive) do
+    struct
+    |> Map.take([
+      :id,
+      :user,
+      :email,
+      :inserted_at,
+      :updated_at
+    ])
+  end
+
   defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
     changeset
     |> Changeset.change(password: Argon2.hash_pwd_salt(password))
