@@ -24,4 +24,26 @@ defmodule X.Users.User do
     |> Changeset.cast(params, fields() -- @generated_fields)
     |> Changeset.validate_required((fields() -- @generated_fields) -- @optional_fields)
   end
+
+  @spec to_json(map()) :: map()
+  def to_json(struct), do: struct |> to_json(:public)
+
+  @spec to_json(map(), :public | :sensitive) :: map()
+  def to_json(struct, _permission = :public) do
+    struct
+    |> Map.take([:account, :name, :gender, :bio])
+  end
+
+  def to_json(struct, _permission = :sensitive) do
+    struct
+    |> Map.take([
+      :id,
+      :account,
+      :name,
+      :gender,
+      :bio,
+      :inserted_at,
+      :updated_at
+    ])
+  end
 end
