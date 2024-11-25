@@ -11,18 +11,6 @@ defmodule X.Accounts do
     end
   end
 
-  def get(params) do
-    with {:ok, id} <- params |> X.Utils.get_field("id"),
-         {:ok, _id} <- id |> X.Utils.is_integer() do
-      case Account |> Repo.get(id) do
-        nil -> {:error, "account not found"}
-        account -> {:ok, account}
-      end
-    else
-      {:error, _reason} = error -> error
-    end
-  end
-
   def insert(params) do
     case params |> Account.changeset() do
       %Ecto.Changeset{valid?: true} = valid -> valid |> Repo.insert()
@@ -31,12 +19,14 @@ defmodule X.Accounts do
   end
 
   def update(params) do
-    with {:ok, account} <- get(params) do
-      account
-      |> Account.changeset(params)
-      |> Repo.update()
-    else
-      {:error, _reason} = error -> error
+    case get(params) do
+      {:ok, account} ->
+        account
+        |> Account.changeset(params)
+        |> Repo.update()
+
+      {:error, _reason} = error ->
+        error
     end
   end
 
@@ -48,4 +38,29 @@ defmodule X.Accounts do
       {:error, _reason} = error -> error
     end
   end
+
+  def get(%{"id" => id}) when is_integer(id) do
+    case Account |> Repo.get(id) do
+      nil -> {:error, "account not found"}
+      account -> {:ok, account}
+    end
+  end
+
+  def get(%{"email" => email}) when is_binary(email) do
+    case Account |> Repo.get_by(email: email) do
+      nil -> {:error, "account not found"}
+      account -> {:ok, account}
+    end
+  end
+
+  def get(id) when is_integer(id) do
+    case Account |> Repo.get(id) do
+      nil -> {:error, "account not found"}
+      account -> {:ok, account}
+    end
+  end
+
+  def get(%{"id" => _id}), do: {:error, "id must be an integer"}
+  def get(%{"email" => _email}), do: {:error, "missing or malformed email"}
+  def get(_id), do: {:error, "missing or invalid id"}
 end
