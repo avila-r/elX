@@ -13,19 +13,43 @@ defmodule X.Accounts.Account do
     has_one :user, X.Users.User
 
     field :email, :string
-    field :password, :string
+
+    field :password, :string, virtual: true
+    field :password_hash, :string
 
     timestamps()
   end
 
-  def changeset(struct \\ %X.Accounts.Account{}, params) do
+  @doc """
+  Create new account.
+  """
+  def changeset(params) do
+    fields = fields() -- @generated_fields
+
+    %X.Accounts.Account{}
+    |> Changeset.cast(params, fields)
+    |> validate(fields)
+    |> hash_password()
+  end
+
+  @doc """
+  Update existent account.
+  """
+  def changeset(struct, params) do
+    fields = fields() -- @generated_fields -- [:password]
+
     struct
-    |> Changeset.cast(params, fields() -- @generated_fields)
-    |> Changeset.validate_required(fields() -- @generated_fields)
+    |> Changeset.cast(params, fields)
+    |> validate(fields)
+    |> hash_password()
+  end
+
+  def validate(changeset, fields) do
+    changeset
+    |> Changeset.unique_constraint(:email)
+    |> Changeset.validate_required(fields)
     |> Changeset.validate_length(:password, min: 4)
     |> Changeset.validate_length(:email, max: 150)
-    |> Changeset.unique_constraint(:email)
-    |> hash_password()
   end
 
   @spec to_json(map()) :: map()
@@ -50,7 +74,7 @@ defmodule X.Accounts.Account do
 
   defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset) do
     changeset
-    |> Changeset.change(password: Argon2.hash_pwd_salt(password))
+    |> Changeset.change(password_hash: Argon2.hash_pwd_salt(password))
   end
 
   defp hash_password(changeset), do: changeset
