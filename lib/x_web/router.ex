@@ -5,8 +5,25 @@ defmodule XWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :auth do
+  end
+
   scope "/api", XWeb do
     pipe_through :api
+
+    scope "/v1" do
+      scope "/" do
+        pipe_through :auth
+
+        resources "/users", UsersController,
+          only: [
+            :index,
+            :show,
+            :update,
+            :delete
+          ]
+      end
+    end
   end
 
   # Enable LiveDashboard in development
